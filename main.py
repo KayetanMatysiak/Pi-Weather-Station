@@ -96,12 +96,12 @@ class Weather_Station():
         for x in range(13):
             weather_symbol = self.search_for_forecast_icons(self.weather["hourly"][x + 1]["weather"][0]["icon"])
             if x <= 5:
-                self.draw_black.text((self.x_var_icons, 185), text=weather_symbol, font=self.small_weather_icons)
+                self.draw_red.text((self.x_var_icons, 185), text=weather_symbol, font=self.small_weather_icons)
                 self.x_var_icons += 135
             elif x == 6:
                 self.x_var_icons = 24
             elif x >= 6:
-                self.draw_black.text((self.x_var_icons, 355), text=weather_symbol, font=self.small_weather_icons)
+                self.draw_red.text((self.x_var_icons, 355), text=weather_symbol, font=self.small_weather_icons)
                 self.x_var_icons += 135
 
     def draw_temperature_both_grids(self):
@@ -117,7 +117,7 @@ class Weather_Station():
                 self.x_var_temp += 135
 
     def draw_a_line(self):
-        self.draw_black.line((5, 310, self.WIDTH - 5, 310), fill=0, width=3)
+        self.draw_red.line((5, 310, self.WIDTH - 5, 310), fill=0, width=3)
 
     def push_to_display(self):
         epd = epd7in5b_V2.EPD()
