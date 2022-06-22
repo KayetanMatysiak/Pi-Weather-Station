@@ -25,8 +25,9 @@
 - Raspberry Pi Zero W
 - Waveshare Eink Display 7.5inch e-Paper HAT (HD, red & black colour)
 - Python
-- XXX mAh battery
-- Charger
+- 3.7V 1000mAh battery
+- 2A Lithium Li-ion 18650 3.7V Battery Charger Module DC 5V Converter
+- USB Micro board (for battery charging)
 
 ## Prerequisites
 - PIL
@@ -46,8 +47,9 @@
 
 
 ## Setup
-Make sure to enable GPiO by using command:<br>
+Make sure to enable GPIO by using command:<br>
 >sudo raspi-config<br>
+However I strongly suggest to use Raspberry Pi Imager for the initial setup of your SD card - you can enable GPIO, SSH and configure WiFi<br>
 Following the instructions from Waveshare<br>
 - Install BCM2835 libraries<br>
 >wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz<br>
@@ -79,8 +81,8 @@ Following the instructions from Waveshare<br>
 
 ## Usage
 You only need to provide latitude and longitude (lines 36 and 37), I suggest using:<br>
-<a href='https://www.latlong.net/'>https://www.latlong.net/</a><br> 
-You also need to provide your own API key from Openweathermap (line 38)
+<a href='https://www.latlong.net/'>https://www.latlong.net/</a><br><br>
+You also need to use your own API key from Openweathermap (line 38)
 
 ## Project Status
 Project is: _in progress_.
