@@ -46,6 +46,8 @@
 
 
 ## Setup
+Make sure to enable GPiO by using command:<br>
+>sudo raspi-config<br>
 Following the instructions from Waveshare<br>
 - Install BCM2835 libraries<br>
 >wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz<br>
