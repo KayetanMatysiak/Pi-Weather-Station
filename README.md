@@ -8,10 +8,8 @@
 * [Screenshots](#screenshots)
 * [Setup](#setup)
 * [Usage](#usage)
-* [Project Status](#project-status)
+* [Autostart](#autostart)
 * [Room for Improvement](#room-for-improvement)
-* [Acknowledgements](#acknowledgements)
-* [Contact](#contact)
 <!-- * [License](#license) -->
 
 
@@ -19,6 +17,7 @@
 - I decided to create my own weather station using Python, Raspberry Pi and Waveshare's eink 7.5inch display (red/black).<br>
 - Waveshare's documentation was confusing and it was hard for me to understand how the screen works.
 - I will try to explain here, step by step how to get it up and running on your Pi!
+- I used this tutorial how to add battery to the Pi (<a href="https://www.youtube.com/watch?v=opYVS0EXZIg">https://www.youtube.com/watch?v=opYVS0EXZIg</a>
 
 
 ## Technologies Used
@@ -42,13 +41,14 @@
 - Refresh time
 
 ## Screenshots
-![Example screenshot](./img/screenshot.png)
-<!-- If you have screenshots you'd like to share, include them here. -->
+<img src='https://github.com/KayetanMatysiak/Pi-Weather-Station/blob/master/weather_station.jpg' width="640" height="548">
 
 
 ## Setup
 Make sure to enable GPIO by using command:<br>
 >sudo raspi-config<br>
+
+
 However I strongly suggest to use Raspberry Pi Imager for the initial setup of your SD card - you can enable GPIO, SSH and configure WiFi<br>
 Following the instructions from Waveshare<br>
 - Install BCM2835 libraries<br>
@@ -82,27 +82,37 @@ Following the instructions from Waveshare<br>
 ## Usage
 You only need to provide latitude and longitude (lines 36 and 37), I suggest using:<br>
 <a href='https://www.latlong.net/'>https://www.latlong.net/</a><br><br>
-You also need to use your own API key from Openweathermap (line 38)
+You also need to use your own API key from Openweathermap (line 38)<br><br>
 
-## Project Status
-Project is: _in progress_.
+Remember to unhash line 4 & 142 and hash 143. It's to import Waveshare's code, push it to the display and avoid generating image in the jpg file.
+
+## Autostart
+I tried using rc.local and crontab - for some reason the first one was causing glitches on the screen and crontab had a problem with auto shutdown.<br>
+The best to accomplish the goal is to use systemd.<br><br>
+
+In order to do that, we need to create a new service:<br>
+>sudo nano /etc/systemd/system/my_script.service<br>
 
 
-## Room for Improvement
-<!-- Include areas you believe need improvement / could be improved. Also add TODOs for future development.
+Paste the code below:<br>
+>[Unit]<br>
+>Description=My_Script Service<br>
+>After=multi-user.target<br><br>
 
-Room for improvement:
-- Improvement to be done 1
-- Improvement to be done 2
+>[Service]<br>
+>Type=idle<br>
+>User=pi<br>
+>ExecStart=/usr/bin/python3 /home/pi/weather_station/launcher.sh<br><br>
 
-To do:
-- Feature to be added 1
-- Feature to be added 2
- -->
+>[Install]<br>
+>WantedBy=multi-user.target<br>
 
-## Acknowledgements
-<!-- Give credit here.
-- This project was inspired by...
-- This project was based on [this tutorial](https://www.example.com).
-- Many thanks to... -->
+Change the file permissions:<br>
+>sudo chmod 644 /etc/systemd/system/name-of-your-service.service<br>
+
+Reload and enable the system:<br>
+>sudo systemctl daemon-reload<br>
+>sudo systemctl enable /etc/systemd/system/my_script.service<br><br>
+
+You may also need to change the permissions for the shutdown service as well as the Python code (including fonts)!
 
