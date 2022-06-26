@@ -41,8 +41,7 @@
 - Refresh time
 
 ## Screenshots
-<img src='https://github.com/KayetanMatysiak/Pi-Weather-Station/blob/master/weather_station.jpg' width="640" height="548">
-
+<img src='https://github.com/KayetanMatysiak/Pi-Weather-Station/blob/master/weather_station.jpg' width="400" height="343"><img src='back.jpg' width="400" height="343">
 
 ## Setup
 Make sure to enable GPIO by using command:<br>
