@@ -51,32 +51,16 @@ Make sure to enable GPIO by using command:<br>
 However I strongly suggest to use Raspberry Pi Imager for the initial setup of your SD card - you can enable GPIO, SSH and configure WiFi<br>
 Following the instructions from Waveshare<br>
 - Install BCM2835 libraries<br>
->wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz<br>
->tar zxvf bcm2835-1.71.tar.gz<br>
->cd bcm2835-1.71/<br>
->sudo ./configure && sudo make && sudo make check && sudo make install<br>
+>wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz && tar zxvf bcm2835-1.71.tar.gz && cd bcm2835-1.71 && sudo ./configure && sudo make && sudo make check && sudo make install<br>
 
 - Install WiringPi libraries<br>
->sudo apt-get install wiringpi<br>
-#For Raspberry Pi systems after May 2019 (earlier than before, you may not need to execute), you may need to upgrade:<br>
->wget https://project-downloads.drogon.net/wiringpi-latest.deb<br>
->sudo dpkg -i wiringpi-latest.deb<br>
->gpio -v<br>
-#Run gpio -v and version 2.52 will appear. If it does not appear, the installation is wrong<br>
-#Bullseye branch system use the following command:<br>
->git clone https://github.com/WiringPi/WiringPi<br>
->cd WiringPi<br>
->./build<br>
->gpio -v<br>
-#Run gpio -v and version 2.60 will appear. If it does not appear, it means that there is an installation error<br>
+>sudo apt-get install git && git clone https://github.com/WiringPi/WiringPi && cd WiringPi && ./build && gpio -v
+
 - Install Python3<br>
->sudo apt-get update<br>
->sudo apt-get install python3-pip<br>
->sudo apt-get install python3-pil<br>
->sudo apt-get install python3-numpy<br>
->sudo pip3 install RPi.GPIO<br>
->sudo pip3 install spidev<br>
->sudo pip3 install requests<br>
+>sudo apt-get update && sudo apt-get install python3-pip python3-pil python3-numpy && sudo pip3 install RPi.GPIO spidev requests
+
+- Clone the repo
+>cd && git clone https://github.com/KayetanMatysiak/Pi-Weather-Station.git
 
 ## Usage
 You only need to provide latitude and longitude (lines 36 and 37), I suggest using:<br>
