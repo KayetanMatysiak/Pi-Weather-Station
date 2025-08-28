@@ -8,7 +8,7 @@ import epd7in5b_V2
 # Constants
 WIDTH = 800
 HEIGHT = 480
-FONT_PATH_TAHOMA = 'fonts/tahoma.ttf'
+FONT_PATH_TAHOMA = 'fonts/tahomabd.ttf'
 FONT_PATH_METEOCONS = 'fonts/meteocons.ttf'
 OWM_URL = 'https://api.openweathermap.org/data/3.0/onecall'
 OWM_URL_GEOCODING = 'http://api.openweathermap.org/geo/1.0/reverse'
@@ -22,10 +22,6 @@ class WeatherStation:
         self.draw_black = ImageDraw.Draw(self.black_image)
         self.draw_red = ImageDraw.Draw(self.red_image)
 
-        self.big_weather_icon = ImageFont.truetype(FONT_PATH_METEOCONS, 80, encoding='unic')
-        self.big_temp = ImageFont.truetype(FONT_PATH_TAHOMA, 80, encoding='unic')
-        self.location_font = ImageFont.truetype(FONT_PATH_TAHOMA, 30, encoding='unic')
-        self.refreshed_font = ImageFont.truetype(FONT_PATH_TAHOMA, 20, encoding='unic')
         self.small_weather_icons = ImageFont.truetype(FONT_PATH_METEOCONS, 70, encoding='unic')
         self.time_grid = ImageFont.truetype(FONT_PATH_TAHOMA, 30, encoding='unic')
         self.temp_grid = ImageFont.truetype(FONT_PATH_TAHOMA, 30, encoding='unic')
@@ -79,113 +75,99 @@ class WeatherStation:
         }
         return icons_dict.get(code, '?')
 
-    # NEW: Helper function to convert wind degrees to a cardinal direction.
     @staticmethod
     def degrees_to_cardinal(d: int) -> str:
         """Converts wind direction from degrees to a cardinal direction string."""
         dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
-        # Each direction covers 45 degrees. We find which segment the degree falls into.
         ix = round(d / (360. / len(dirs)))
         return dirs[ix % len(dirs)]
 
-    def current_weather(self) -> None:
-        """Draw current weather icon and temperature."""
-        if not self.weather:
-            return
-
-        small_weather_icon_font = ImageFont.truetype(FONT_PATH_METEOCONS, 30, encoding='unic')
-        small_temp_font = ImageFont.truetype(FONT_PATH_TAHOMA, 25, encoding='unic')
-        icon_code = self.weather["current"]["weather"][0]["icon"]
-        icon = self.search_for_forecast_icons(icon_code)
-        vertical_offset = 10
-        self.draw_black.text((10, vertical_offset), text=icon, font=small_weather_icon_font)
-        temp = round(self.weather["hourly"][0]["temp"])
-        temp_feels_like = round(self.weather["hourly"][0]["feels_like"])
-        self.draw_black.text((45, vertical_offset), text=f'{temp}°C / ({temp_feels_like}°C)', font=small_temp_font)
-
-    def location_name(self) -> None:
-        """Draw location name."""
-        if not self.geocode_location:
-            return
-
-        small_location_font = ImageFont.truetype(FONT_PATH_TAHOMA, 18, encoding='unic')
-        name = self.geocode_location[0].get("name", "")
-        country = self.geocode_location[0].get("country", "")
-        vertical_offset = 55
-        location_text = f'{name}, {country}'
-        self.draw_black.text((10, vertical_offset), text=location_text, font=small_location_font)
-
-    def refresh_time_string(self) -> None:
-        """Draw refresh time."""
-        if not self.now:
-            return
-
-        small_refreshed_font = ImageFont.truetype(FONT_PATH_TAHOMA, 14, encoding='unic')
-        refresh_text = f'Refreshed at {self.now.strftime("%H:%M")}'
-        self.draw_black.text((10, 40), text=refresh_text, font=small_refreshed_font)
-
-    # MODIFIED: This function is updated with new Y-positions and logic to draw wind info.
     def draw_hourly_forecast_grids(self):
-        """
-        Draw the two rows of hourly forecasts, centering all elements within each column.
-        """
+        """Draws the two rows of hourly forecasts, maximizing the forecast display."""
         if not self.weather or not self.current_time_one_hour:
             return
 
-        # --- Layout Constants ---
-        NUM_FORECASTS = 13
+        # --- Layout Constants (Adjusted for Maximized Display) ---
+        NUM_FORECASTS = 12  # Display 12 hours
         COLUMNS_PER_ROW = 6
-        COLUMN_WIDTH = 130
-        START_X = 15
+        COLUMN_WIDTH = WIDTH // COLUMNS_PER_ROW  # Dynamic column width
+        START_X = 0  # Start from the left edge
 
-        # MODIFIED: Y positions are adjusted to make space for the new wind line.
+        # Adjusted Y positions to use available height
+        ROW_HEIGHT = HEIGHT // 2
         Y_POS = {
-            'time': [85, 285],
-            'icon': [115, 315],
-            'temp': [190, 390],
-            'details': [220, 420],
-            'wind': [245, 445]  # New Y-position for wind info
+            'time': [10, HEIGHT // 2 + 10],
+            'icon': [60, HEIGHT // 2 + 60],
+            'temp': [120, HEIGHT // 2 + 120],
+            'details': [170, HEIGHT // 2 + 170],
+            'wind': [210, HEIGHT // 2 + 210]
         }
 
-        time_pointer = self.current_time_one_hour
+        # --- Font Sizes (Adjusted for Maximized Display) ---
+        time_font_size = 36
+        icon_font_size = 65  # Reduced icon font size
+        temp_font_size = 34
+        details_font_size = 22
+        wind_font_size = 14  # Smaller wind direction font
+
+        time_grid = ImageFont.truetype(FONT_PATH_TAHOMA, time_font_size, encoding='unic')
+        small_weather_icons = ImageFont.truetype(FONT_PATH_METEOCONS, icon_font_size, encoding='unic')
+        temp_grid = ImageFont.truetype(FONT_PATH_TAHOMA, temp_font_size, encoding='unic')
+        details_font = ImageFont.truetype(FONT_PATH_TAHOMA, details_font_size, encoding='unic')
+        wind_font = ImageFont.truetype(FONT_PATH_TAHOMA, wind_font_size, encoding='unic')
+
+        time_pointer = self.now
 
         for i in range(NUM_FORECASTS):
-            row_index = i // (COLUMNS_PER_ROW + 1)
-            col_index = i % (COLUMNS_PER_ROW + 1) if row_index == 0 else i - (COLUMNS_PER_ROW + 1)
+            row_index = i // COLUMNS_PER_ROW
+            col_index = i % COLUMNS_PER_ROW
             column_center_x = START_X + (col_index * COLUMN_WIDTH) + (COLUMN_WIDTH / 2)
             hour_data = self.weather["hourly"][i + 1]
 
             # --- 1. Draw Time ---
             time_text = f'{time_pointer.strftime("%H")}:00'
-            time_bbox = self.draw_black.textbbox((0, 0), time_text, font=self.time_grid)
+            time_bbox = self.draw_black.textbbox((0, 0), time_text, font=time_grid)
             time_x = column_center_x - ((time_bbox[2] - time_bbox[0]) / 2)
-            self.draw_black.text((time_x, Y_POS['time'][row_index]), time_text, font=self.time_grid)
+            self.draw_black.text((time_x, Y_POS['time'][row_index]), time_text, font=time_grid)
 
             # --- 2. Draw Weather Icon ---
             icon_char = self.search_for_forecast_icons(hour_data["weather"][0]["icon"])
-            icon_bbox = self.draw_red.textbbox((0, 0), icon_char, font=self.small_weather_icons)
+            icon_bbox = self.draw_red.textbbox((0, 0), icon_char, font=small_weather_icons)
             icon_x = column_center_x - ((icon_bbox[2] - icon_bbox[0]) / 2)
-            self.draw_red.text((icon_x, Y_POS['icon'][row_index]), icon_char, font=self.small_weather_icons)
+            self.draw_red.text((icon_x, Y_POS['icon'][row_index]), icon_char, font=small_weather_icons)
 
             # --- 3. Draw Temperature ---
             temp_text = f'{round(hour_data["temp"])}°C'
-            temp_bbox = self.draw_black.textbbox((0, 0), temp_text, font=self.temp_grid)
-            temp_x = column_center_x - ((temp_bbox[2] - temp_bbox[0]) / 2)
-            self.draw_black.text((temp_x, Y_POS['temp'][row_index]), temp_text, font=self.temp_grid)
+            temp_bbox = self.draw_black.textbbox((0, 0), temp_text, font=temp_grid)
+            temp_x = column_center_x - ((time_bbox[2] - time_bbox[0]) / 2)
+            self.draw_black.text((time_x, Y_POS['temp'][row_index]), temp_text, font=temp_grid)
 
             # --- 4. Draw Details (Humidity & Feels Like) ---
             details_text = f"{hour_data['humidity']}% | {round(hour_data['feels_like'])}°"
-            details_bbox = self.draw_black.textbbox((0, 0), details_text, font=self.details_font)
+            details_bbox = self.draw_black.textbbox((0, 0), details_text, font=details_font)
             details_x = column_center_x - ((details_bbox[2] - details_bbox[0]) / 2)
-            self.draw_black.text((details_x, Y_POS['details'][row_index]), details_text, font=self.details_font)
+            self.draw_black.text((details_x, Y_POS['details'][row_index]), details_text, font=details_font)
 
-            # --- 5. Draw Wind Info --- (NEW)
+            # --- 5. Draw Wind Info ---
             wind_speed_kmh = round(hour_data['wind_speed'] * 3.6)  # Convert m/s to km/h
             wind_direction = self.degrees_to_cardinal(hour_data['wind_deg'])
-            wind_text = f"{wind_speed_kmh} km/h {wind_direction}"
-            wind_bbox = self.draw_black.textbbox((0, 0), wind_text, font=self.details_font)
-            wind_x = column_center_x - ((wind_bbox[2] - wind_bbox[0]) / 2)
-            self.draw_black.text((wind_x, Y_POS['wind'][row_index]), wind_text, font=self.details_font)
+
+            # Split wind info into speed and direction
+            wind_speed_text = f"{wind_speed_kmh} km/h "
+            wind_direction_text = f"{wind_direction}"
+
+            wind_speed_bbox = self.draw_black.textbbox((0, 0), wind_speed_text, font=details_font)
+            wind_direction_bbox = self.draw_red.textbbox((0, 0), wind_direction_text, font=wind_font)
+
+            # Calculate total width for centering
+            total_wind_width = wind_speed_bbox[2] - wind_speed_bbox[0] + wind_direction_bbox[2] - wind_direction_bbox[0]
+            wind_x = column_center_x - (total_wind_width / 2)
+
+            # Draw wind speed in black
+            self.draw_black.text((wind_x, Y_POS['wind'][row_index]), wind_speed_text, font=details_font)
+
+            # Draw wind direction in red, after the speed
+            self.draw_red.text((wind_x + (wind_speed_bbox[2] - wind_speed_bbox[0]), Y_POS['wind'][row_index]), wind_direction_text, font=wind_font)
 
             time_pointer += timedelta(hours=1)
 
@@ -207,7 +189,6 @@ class WeatherStation:
         combined_image.show()
 
     def push_to_display(self) -> None:
-        """Push images to the e-paper display (requires epd7in5b_V2)."""
         epd = epd7in5b_V2.EPD()
         epd.init()
         epd.Clear()
@@ -218,9 +199,6 @@ if __name__ == "__main__":
     forecast.owm_weather()
     forecast.city_name()
     forecast.current_time()
-    forecast.current_weather()
-    forecast.location_name()
-    forecast.refresh_time_string()
     forecast.draw_hourly_forecast_grids()
-    forecast.push_to_display()
-    # forecast.display_image()
+    forecast.display_image()
+    # forecast.push_to_display()
