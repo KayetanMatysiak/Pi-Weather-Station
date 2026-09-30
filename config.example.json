@@ -1,0 +1,30 @@
+{
+  "weather": {
+    "lat": "YOUR_LATITUDE",
+    "lon": "YOUR_LONGITUDE",
+    "appid": "YOUR_OPENWEATHERMAP_API_KEY",
+    "units": "metric"
+  },
+  "calendar": {
+    "enabled": false,
+    "calendar_id": "primary",
+    "credentials_file": "credentials.json",
+    "token_file": "token.json",
+    "max_events": 5,
+    "lookahead_days": 7,
+    "timezone": "Europe/Madrid",
+    "max_title_length": 32
+  },
+  "news": {
+    "enabled": false,
+    "feeds": [
+      "https://YOUR_LOCAL_NEWS_SITE/rss",
+      "https://ANOTHER_LOCAL_FEED/feed.xml"
+    ],
+    "max_headlines": 4,
+    "max_headline_length": 40,
+    "headline_lines": 2,
+    "show_source": true,
+    "timeout": 10
+  }
+}
