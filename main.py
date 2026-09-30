@@ -1,9 +1,15 @@
+import hashlib
+import os
+
 import requests
 from PIL import Image, ImageFont, ImageDraw
 from datetime import timedelta, datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import epd7in5b_V2
+from calendar_service import CalendarService
+from config import load_config
+from news_service import NewsService
 
 # Constants
 WIDTH = 800
@@ -12,11 +18,17 @@ FONT_PATH_TAHOMA = 'fonts/tahomabd.ttf'
 FONT_PATH_METEOCONS = 'fonts/meteocons.ttf'
 OWM_URL = 'https://api.openweathermap.org/data/3.0/onecall'
 OWM_URL_GEOCODING = 'http://api.openweathermap.org/geo/1.0/reverse'
+DISPLAY_STATE_FILE = '.display_state'
 
 
 class WeatherStation:
-    def __init__(self):
-        """Initialize display images, fonts, and drawing contexts."""
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize display images, fonts, drawing contexts and services."""
+        self.config = config if config is not None else load_config()
+        self.calendar_service = CalendarService(self.config)
+        self.news_service = NewsService(self.config)
+        self.calendar_lines: List[str] = []
+        self.news_lines: List[str] = []
         self.black_image = Image.new('1', (WIDTH, HEIGHT), 255)
         self.red_image = Image.new('1', (WIDTH, HEIGHT), 255)
         self.draw_black = ImageDraw.Draw(self.black_image)
@@ -39,6 +51,23 @@ class WeatherStation:
             'units': 'metric',
             'exclude': 'daily,minutely'
         }
+
+        # Optional overrides, so that no location or API key has to be edited
+        # inside the code (see config.example.json).
+        for key in ('lat', 'lon', 'appid', 'units'):
+            value = self.config.get('weather', {}).get(key)
+            if value:
+                self.weather_parameters[key] = value
+
+    @property
+    def panels_enabled(self) -> bool:
+        """True when at least one optional information panel is active."""
+        return self.calendar_service.enabled or self.news_service.enabled
+
+    def fetch_extras(self) -> None:
+        """Collect calendar and news lines; failures degrade to empty panels."""
+        self.calendar_lines = self.calendar_service.get_lines()
+        self.news_lines = self.news_service.get_lines()
 
     def owm_weather(self) -> None:
         """Fetch weather data from OpenWeatherMap."""
@@ -88,7 +117,9 @@ class WeatherStation:
             return
 
         # --- Layout Constants (Adjusted for Maximized Display) ---
-        NUM_FORECASTS = 12  # Display 12 hours
+        # With the optional panels enabled the bottom half of the screen is
+        # used for the agenda and the headlines, so only one forecast row fits.
+        NUM_FORECASTS = 6 if self.panels_enabled else 12
         COLUMNS_PER_ROW = 6
         COLUMN_WIDTH = WIDTH // COLUMNS_PER_ROW  # Dynamic column width
         START_X = 0  # Start from the left edge
@@ -171,6 +202,36 @@ class WeatherStation:
 
             time_pointer += timedelta(hours=1)
 
+    def draw_panels(self) -> None:
+        """Draw the optional calendar and news panels in the bottom half."""
+        if not self.panels_enabled:
+            return
+
+        panel_font = ImageFont.truetype(FONT_PATH_TAHOMA, 20, encoding='unic')
+        title_font = ImageFont.truetype(FONT_PATH_TAHOMA, 24, encoding='unic')
+
+        panel_top = HEIGHT // 2
+        self.draw_black.line((0, panel_top, WIDTH, panel_top), fill=0)
+
+        panels = []
+        if self.calendar_service.enabled:
+            panels.append(('AGENDA', self.calendar_lines or ['No upcoming events']))
+        if self.news_service.enabled:
+            panels.append(('LOCAL NEWS', self.news_lines or ['No headlines available']))
+
+        panel_width = WIDTH // len(panels)
+        for index, (title, lines) in enumerate(panels):
+            x = index * panel_width + 10
+            if index:
+                self.draw_black.line((index * panel_width, panel_top, index * panel_width, HEIGHT), fill=0)
+            self.draw_red.text((x, panel_top + 8), title, font=title_font)
+            y = panel_top + 44
+            for line in lines:
+                if y + 24 > HEIGHT:
+                    break
+                self.draw_black.text((x, y), line, font=panel_font)
+                y += 24
+
     def display_image(self) -> None:
         """
         Combines the black and red 1-bit images into a single RGB image
@@ -188,7 +249,29 @@ class WeatherStation:
                     combined_pixels[x, y] = (0, 0, 0)
         combined_image.show()
 
+    def content_changed(self, state_file: str = DISPLAY_STATE_FILE) -> bool:
+        """Return True when the rendered content differs from the last refresh.
+
+        E-ink refreshes are slow and wear the panel, so an unchanged image is
+        not pushed again.
+        """
+        digest = hashlib.sha256(
+            self.black_image.tobytes() + self.red_image.tobytes()).hexdigest()
+        try:
+            if os.path.exists(state_file):
+                with open(state_file, 'r', encoding='utf-8') as state:
+                    if state.read().strip() == digest:
+                        return False
+            with open(state_file, 'w', encoding='utf-8') as state:
+                state.write(digest)
+        except OSError as error:
+            print(f"Could not read/write {state_file}: {error}")
+        return True
+
     def push_to_display(self) -> None:
+        if not self.content_changed():
+            print("Display content unchanged, skipping refresh.")
+            return
         epd = epd7in5b_V2.EPD()
         epd.init()
         epd.Clear()
@@ -199,6 +282,8 @@ if __name__ == "__main__":
     forecast.owm_weather()
     forecast.city_name()
     forecast.current_time()
+    forecast.fetch_extras()
     forecast.draw_hourly_forecast_grids()
+    forecast.draw_panels()
     forecast.display_image()
     # forecast.push_to_display()

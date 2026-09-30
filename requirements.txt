@@ -1,0 +1,11 @@
+# Core weather station dependencies
+requests
+Pillow
+
+# Optional: Google Calendar panel (calendar.enabled = true)
+google-api-python-client
+google-auth
+google-auth-oauthlib
+
+# Optional: local news panel (news.enabled = true)
+feedparser
